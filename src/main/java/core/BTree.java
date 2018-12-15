@@ -29,6 +29,7 @@ import java.util.Iterator;
  * - changed the BTree to take in char[] objects instead of Comparables, and wrote
  *   new comparison functions for the keys
  * - made the BTree serializable
+ * - converted implementation from in-menory to disk
  */
 
 /**
@@ -274,7 +275,7 @@ public class BTree {
     }
 
     public static byte[] emptyEntryData() {
-        int size = PAGE_SIZE;
+        int size = LONG_SIZE;
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream(size);
         DataOutputStream dos = new DataOutputStream(baos);

@@ -1,11 +1,9 @@
 package core;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 
 import javax.xml.namespace.QName;
@@ -125,12 +123,36 @@ public class SimpleKV implements KeyValue {
 
     @Override
     public void beginTx() {
-	    System.out.println("Done!");
+        try {
+            // TODO: check if snapshot exists = means crash, fix copy error
+            File f = new File(filePath);
+            File copy = new File(f.getAbsoluteFile().getParent() + "-snapshot");
+            File ef = new File(filePath + "-entries");
+            File ecopy = new File(f.getAbsoluteFile().getParent() + "-entries-snapshot");
+
+            if (!copy.createNewFile()) {
+                Files.copy(copy.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                Files.copy(ecopy.toPath(), ef.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                Files.copy(f.toPath(), copy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                Files.copy(ef.toPath(), ecopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } 
     }
 
     @Override
     public void commit() {
-	    System.out.println("Done!");
+        writeToDisk();
+        File f = new File(filePath + "-snapshot");
+        f.delete();
+
+        f = new File(filePath + "-entries-snapshot");
+        f.delete();
     }
 
 }
