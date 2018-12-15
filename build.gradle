@@ -4,10 +4,27 @@ plugins {
     id 'idea'
 }
 
-version = 'TEAM-NAME'
+version = 'fido'
 
 dependencies {
+    testCompile 'junit:junit:4.12'
     testImplementation 'junit:junit:4.12'
+}
+
+test {
+    testLogging {
+        exceptionFormat 'full'
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        outputs.upToDateWhen {false}
+    }
+}
+
+sourceSets {
+    test {
+        java {
+            srcDirs "src/test"  // Note @Peter's comment below
+        }
+    }
 }
 
 repositories {
