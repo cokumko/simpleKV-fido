@@ -116,7 +116,7 @@ public class BasicReadWriteTest {
     @Test
     public void checkDuplicate() throws Exception {
         assertRead(4);
-        assertEquals(5, this.db.bufferSize());
+        assertEquals(5, this.db.size());
     }
 
     @Test 

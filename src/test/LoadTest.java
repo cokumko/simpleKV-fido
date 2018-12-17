@@ -16,7 +16,7 @@ import junit.framework.JUnit4TestAdapter;
 
 public class LoadTest {
     private SimpleKV db;
-    private static final int NUM_ENTRIES = Buffer.maxSize();
+    private static final int NUM_ENTRIES = 100;
     private static final String PATH = "load_test";
 
 
@@ -45,23 +45,22 @@ public class LoadTest {
         f.delete();
     }
 
-    // @Test
-    // public void testLoad() throws Exception {
-    //     assertEquals(NUM_ENTRIES, this.db.fileSize());
+    @Test
+    public void testLoad() throws Exception {
+        assertEquals(NUM_ENTRIES, this.db.fileSize());
 
-    //     // recreate database, verify its empty
-    //     this.db = this.db.initAndMakeStore("");
-    //     assertEquals(0, this.db.fileSize());
-    //     assertEquals(0, this.db.bufferSize());
+        // recreate database, verify its empty
+        this.db = this.db.initAndMakeStore("");
+        assertEquals(0, this.db.size());
 
-    //     this.db = this.db.initAndMakeStore(PATH);
-    //     assertEquals(NUM_ENTRIES, this.db.fileSize());
+        this.db = this.db.initAndMakeStore(PATH);
+        assertEquals(NUM_ENTRIES, this.db.fileSize());
     
-    //     for (int i = 0; i < NUM_ENTRIES; i++) {
-    //         char[] c = {(char) i};
-    //         assertRead(c, c);
-    //     }
-    // }
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            char[] c = {(char) i};
+            assertRead(c, c);
+        }
+    }
 
     /**
      * JUnit suite target

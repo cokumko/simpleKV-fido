@@ -18,6 +18,7 @@ public class BufferEvictionTest {
     private SimpleKV db;
     private static final int NUM_ENTRIES = Buffer.maxSize();
     private static final String PATH = "eviction_test";
+    private int entryCounter = 0;
 
     /**
      * Set up initial resources for each unit test.
@@ -25,10 +26,7 @@ public class BufferEvictionTest {
     @Before
     public void createDB() throws Exception {
         this.db = new SimpleKV().initAndMakeStore(PATH);
-        for (int i = 0; i < NUM_ENTRIES; i++) {
-            char[] c = {(char) i};
-            this.db.write(c, c);
-        }
+        entryCounter = 0;
     }
 
     @After
@@ -39,25 +37,22 @@ public class BufferEvictionTest {
         f.delete();
     }
 
-    // @Test
-    // public void testEviction() throws Exception {
-    //     assertEquals(NUM_ENTRIES, this.db.bufferSize());
-    //     assertEquals(0, this.db.fileSize());
+    @Test
+    public void testEviction() throws Exception {
+        for (int i = 0; i < NUM_ENTRIES; i++) {
+            char[] c = (i + "").toCharArray();
+            if (this.db.fileSize() > 0) break;
+            this.db.write(c, c);
+            entryCounter++;
+        }
+        assertEquals(entryCounter, this.db.fileSize());
+        assertEquals(entryCounter, this.db.numBufferEntries());
 
-    //     int toChar = NUM_ENTRIES;
-    //     for (int i = 0; i < NUM_ENTRIES; i++) {
-    //         char[] c = {(char) toChar};
-    //         this.db.write(c, c);
-    //         assertEquals(NUM_ENTRIES, this.db.bufferSize());
-    //         assertEquals(NUM_ENTRIES, this.db.fileSize());
-    //         toChar++;
-    //     }
-
-    //     char[] c = { (char) toChar };
-    //     this.db.write(c, c);
-    //     assertEquals(NUM_ENTRIES, this.db.bufferSize());
-    //     assertEquals(NUM_ENTRIES * 2, this.db.fileSize());
-    // }
+        char[] c = (entryCounter + "").toCharArray();
+        this.db.write(c, c);
+        assertEquals(entryCounter, this.db.numBufferEntries());
+        assertEquals(entryCounter, this.db.fileSize());
+    }
 
     /**
      * JUnit suite target

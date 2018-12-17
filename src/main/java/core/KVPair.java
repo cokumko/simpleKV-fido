@@ -24,6 +24,7 @@ public class KVPair {
     }
 
     public static String charToString(char[] arr) {
+        if (arr == null || arr.length == 0) return "";
         String result = "";
         for (char c : arr) {
             result += c;

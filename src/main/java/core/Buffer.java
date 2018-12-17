@@ -9,9 +9,9 @@ public class Buffer {
     private ConcurrentHashMap<String, KVPair> map;
     private ConcurrentLinkedQueue<String> queue;
     private ConcurrentHashMap<String, Boolean> dirtyEntries;
-    private int numDirty, n;
+    private int numDirty, n, size;
 
-    private static final int MAX_SIZE = 100;
+    private static final int MAX_SIZE = 5 * (int) Math.pow(10, 8);
 
     public Buffer() {
         this.map = new ConcurrentHashMap<String, KVPair>();
@@ -19,6 +19,11 @@ public class Buffer {
         this.dirtyEntries = new ConcurrentHashMap<String, Boolean>();
         this.numDirty = 0;
         this.n = 0;
+        this.size = 0;
+    }
+
+    public int getKVPairSize(KVPair pair) {
+        return (pair.element1.length + pair.element2.length) * 2;
     }
 
     public KVPair get(String key) {
@@ -33,16 +38,23 @@ public class Buffer {
     public KVPair remove(String key) {
         n--;
         this.queue.remove(key);
-        return this.map.remove(key);
+        KVPair p = this.map.remove(key);
+        size -= getKVPairSize(p);
+        return p;
     }
 
     public void put(String key, KVPair value, boolean dirty) {
+        int newSize = 0;
         if (this.map.containsKey(key)) {
             this.queue.remove(key);
+            newSize = getKVPairSize(value) - getKVPairSize(this.map.get(key));
         } else {
-            if (size() >= MAX_SIZE) evictPage();
+            newSize = getKVPairSize(value);
             n++;
         }
+        while ((size() + newSize) >= MAX_SIZE) evictPage();
+        size += newSize;
+
         this.queue.add(key);
         this.map.put(key, value);
 
@@ -53,8 +65,12 @@ public class Buffer {
         this.numDirty++;
     }
 
-    public int size() {
+    public int numEntries() {
         return this.n;
+    }
+    
+    public int size() {
+        return this.size;
     }
 
     public static int maxSize() {

@@ -6,14 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 
-import javax.xml.namespace.QName;
-
 public class SimpleKV implements KeyValue {
     private BTree tree;
     private Buffer buffer;
     private String filePath;
-
-    private static final int MAX_WRITES = Buffer.maxSize();
 
     public SimpleKV() {
         buffer = new Buffer();
@@ -90,9 +86,18 @@ public class SimpleKV implements KeyValue {
         return this.buffer.size();
     }
 
+    public int numBufferEntries() {
+        return this.buffer.numEntries();
+    }
+
+    public int size() {
+        return fileSize() + numBufferEntries();
+    }
+
     @Override
     public void write(char[] key, char[] value) {
-        if (buffer.numDirtyEntries() >= MAX_WRITES) {
+        if (buffer.size() + (2 * (key.length + value.length)) >= Buffer.maxSize()) {
+            System.err.println("writing to disksksks");
             writeToDisk();
         }
         this.buffer.put(KVPair.charToString(key), new KVPair(key, value), true);
@@ -131,14 +136,19 @@ public class SimpleKV implements KeyValue {
             File ecopy = new File(f.getAbsoluteFile().getParent() + "-entries-snapshot");
 
             if (!copy.createNewFile()) {
+                System.err.println("copy already exists");
                 Files.copy(copy.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 Files.copy(ecopy.toPath(), ef.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } else {
+                System.err.println("copy doesnt already exists");
+                ecopy.createNewFile();
                 Files.copy(f.toPath(), copy.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 Files.copy(ef.toPath(), ecopy.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+
+            tree.rereadValues();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -148,10 +158,11 @@ public class SimpleKV implements KeyValue {
     @Override
     public void commit() {
         writeToDisk();
-        File f = new File(filePath + "-snapshot");
+        File f = new File(filePath);
+        f = new File(f.getAbsoluteFile().getParent() + "-snapshot");
         f.delete();
 
-        f = new File(filePath + "-entries-snapshot");
+        f = new File(f.getAbsoluteFile().getParent() + "-entries-snapshot");
         f.delete();
     }
 

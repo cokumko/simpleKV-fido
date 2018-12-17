@@ -145,12 +145,12 @@ public class BTree {
 
     // internal nodes: only use key and nextN
     // external nodes: only use key, value, next, prev
-    private static class Entry implements Serializable{
-        private static final long serialVersionUID = 1L;
-        private char[] key;
-        private int size;
-        private long val, prev, next, offset;
-        private boolean isExternal;
+    public static class Entry implements Serializable{
+        public static final long serialVersionUID = 1L;
+        public char[] key;
+        public int size;
+        public long val, prev, next, offset;
+        public boolean isExternal;
 
         private Entry(char[] key, long val, long prev, long next, long offset, boolean external) {
             this.key = key;
@@ -235,7 +235,10 @@ public class BTree {
     public BTree(File f, File ef) {
         file = f;
         entryFile = f;
+        rereadValues();
+    }
 
+    public void rereadValues() {
         try {
             RandomAccessFile bf = new RandomAccessFile(file, "r");
             rootPos = bf.readInt();
@@ -249,7 +252,6 @@ public class BTree {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-
     }
 
     public static byte[] emptyTreeData() {
@@ -290,6 +292,14 @@ public class BTree {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+    private static int nodeSize(Node n) {
+        int size = 2 * INT_SIZE;
+        for (int i = 0; i < n.m; i++) {
+            size += n.entries[i].size + ENTRY_HEADER_SIZE;
+        }
+        return size;
     }
 
     /**
@@ -385,7 +395,7 @@ public class BTree {
         }
     }
 
-    private char[] readValue(Entry entry) {
+    public char[] readValue(Entry entry) {
         if (entry == null) return null;
         
         try {
@@ -657,7 +667,7 @@ public class BTree {
         }
         
         affectedNodes.add(h);
-        if (h.m < M) {
+        if (h.m < M && nodeSize(h) < PAGE_SIZE) {
             return null;
         } else {
             // System.out.println("splitting");
@@ -669,21 +679,26 @@ public class BTree {
 
     // split node in half
     private Node split(Node h) {
-        Node t = new Node(M / 2, pages);
+        int hSize = h.m / 2, tSize = h.m / 2;
+        if (h.m % 2 != 0) {
+            tSize += 1;
+        }
+
+        Node t = new Node(tSize, pages);
         pages++;
-        h.m = M / 2;
+        h.m = hSize;
         long offset = t.startOfEntries();
 
     
         // int lastIndex = M / 2 - 1;
-        for (int j = 0; j < M / 2; j++) {
-            boolean isNotLast = j + 1 != M / 2;
-            t.entries[j] = h.entries[M / 2 + j];
+        for (int j = 0; j < tSize; j++) {
+            boolean isNotLast = j + 1 != tSize;
+            t.entries[j] = h.entries[hSize + j];
             t.entries[j].offset = offset;
 
-            if (j == 0) h.entries[M / 2 - 1].next = offset;
-            t.children[j] = h.children[M / 2 + j];
-            if (isNotLast) h.entries[M / 2 + j + 1].prev = offset;
+            if (j == 0) h.entries[hSize - 1].next = offset;
+            t.children[j] = h.children[hSize + j];
+            if (isNotLast) h.entries[hSize + j + 1].prev = offset;
 
             offset += t.entries[j].size + (2 * INT_SIZE);
             if (isNotLast) t.entries[j].next = offset;
